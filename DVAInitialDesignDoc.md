@@ -1,9 +1,37 @@
 # DVA: Design Document
 
-**Version:** 0.12.0  
+**Version:** 0.13.0  
 **Status:** Provisional. Working design model, not an implementation specification.  
-**Previous version:** 0.11.0  
+**Previous version:** 0.12.0  
 **Motto:** Evidence over speculation.
+
+## Version 0.13.0: Change Summary
+
+This provisional design expansion establishes DVA as a general-purpose creative and project environment, preserving its writing-first foundation. Independent experiments can contribute reusable capabilities without requiring consolidation into DVA.
+
+### Human-readable qualities and on-demand composition
+
+- Keep JSON as the canonical workspace representation for embedded content, layout, marks and workspace-owned state. For standalone Markdown files, explicitly authored YAML front matter is authoritative for file-owned properties; parsed JSON-compatible values and indexes are derived. This refines the earlier export-only metadata model: workspace-owned metadata and file-owned properties have distinct ownership, and exported copies do not automatically become authoritative. Resolve collisions explicitly rather than silently overwriting either source.
+- Support raw source, rendered Markdown composition, and schema-driven inspectors as complementary views of the same information. Preserve unknown properties, comments and unrelated formatting during targeted edits; validate changes and retain recovery paths.
+- Allow user-defined and extension-defined qualities to influence cards, filtering, relationships, presentation and trusted actions. The website's front matter-driven visibility, status, tags and imagery provide a practical precedent.
+- Separate content, properties, optional schemas, representations and behavior. Ordinary document declarations are data, not arbitrary executable instructions. Actions require registered capabilities and appropriate permissions.
+- AI is a discovery and composition interface: users can ask how to create a link, button, calculation or custom view without memorizing syntax. A discoverable capability registry should expose supported properties, schemas, actions, examples, extension versions and constraints. Models should inspect actual capabilities, propose validated changes and show results rather than invent unsupported syntax.
+- Illustrative, not finalized syntax: a YAML button record with label, action (open-url) and target. The same record should be editable through source, inspector and AI-assisted changes. Ordinary Markdown links remain useful.
+- Users need not adopt or build a separate application for every problem. A conversation can produce a narrowly tailored spreadsheet-like calculation, tracker, comparison or interactive document using existing primitives. Inspect inputs, formulas, outputs and assumptions; edit individual details, test examples, preserve provenance and reuse components. Artifacts should persist and remain usable without a model connection. General-purpose applications and external integrations remain options when appropriate.
+- Preserve user control: preview proposed changes, support undo, validate formulas and references, isolate execution, and require explicit authorization for privileged or external side effects. Never treat generated output as verified merely because it renders.
+- Potential contributors include SMH-Tree (branching AI context), F-2 (navigation), Meta-Modules (discoverable instructions), reusable inspector (property editing), Sketch-to-ASCII (textual visual communication), creative instruction kits and cloud/model evaluation experiments. These are possible relationships, not integration commitments.
+
+### Prior art for further investigation
+
+- [Obsidian Properties](https://obsidian.md/help/properties) and [Bases](https://obsidian.md/help/bases): file properties and dynamic views.
+- [Logseq properties](https://github.com/logseq/docs/blob/master/pages/Properties.md) and [Org-mode](https://orgmode.org/org.html): block/heading properties and structured text.
+- [Quarto](https://quarto.org/docs/) and [Astro Content Collections](https://docs.astro.build/en/guides/content-collections/): declarative rendering, publishing and schemas.
+- [JSON Forms](https://jsonforms.io/docs/), [React JSON Schema Form](https://github.com/rjsf-team/react-jsonschema-form), [Decap CMS](https://decapcms.org/docs/widgets/): schema-driven inspectors.
+- [TiddlyWiki](https://tiddlywiki.com/), HyperCard, [Ink & Switch](https://www.inkandswitch.com/), [Node-RED](https://nodered.org/): malleable software, interactive documents and end-user composition.
+- [MCP](https://modelcontextprotocol.io/) and [IntelliSense](https://code.visualstudio.com/docs/editing/intellisense): discoverable capabilities and contextual assistance.
+- [yaml](https://eemeli.org/yaml/) and [ruamel.yaml](https://yaml.dev/doc/ruamel.yaml/): candidates for round-trip YAML editing.
+
+These references are research leads, not verified implementation dependencies. Exact syntax, schema ownership, capability contracts, formula engine, permission model and runtime remain open. No implementation or test acceptance is implied.
 
 ## Version 0.12.0: Change Summary
 
@@ -1015,7 +1043,7 @@ HTML output may be a single self-contained file when practical, or a folder/pack
 
 ### Metadata and export profiles
 
-Workspace JSON remains the authoritative source for DVA metadata, marks, comments, and relationships. When saving or exporting a standalone text file, DVA may serialize supported metadata and marks into that file as a portable copy, such as YAML front matter in Markdown. This copy does not become a second authoritative source.
+Workspace JSON remains the authoritative source for workspace-owned DVA metadata, marks, comments, and relationships. Explicitly authored standalone file properties are file-owned as clarified in version 0.13.0. When saving or exporting a standalone text file, DVA may serialize supported metadata and marks into that file as a portable copy, such as YAML front matter in Markdown. This copy does not become a second authoritative source.
 
 - Opening or adding an existing file should not silently rewrite it merely to insert metadata.
 - Saving a file with DVA metadata embedding enabled, or choosing an export profile that includes metadata, may write the supported representation into the output file.
