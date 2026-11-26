@@ -1,9 +1,24 @@
 # DVA: Design Document
 
-**Version:** 0.15.0  
+**Version:** 0.16.0  
 **Status:** Provisional. Working design model, not an implementation specification.  
-**Previous version:** 0.14.1  
+**Previous version:** 0.15.0  
 **Motto:** Evidence over speculation.
+
+## Version 0.16.0: Change Summary
+
+### Consistency of interaction, diversity of expression
+
+Drawing on Jef Raskin's [The Humane Interface](https://en.wikipedia.org/wiki/The_Humane_Interface), explore monotony of design as a way to reduce the attention and learning required to operate DVA. Raskin's strict monotony favors one method per atomic task. DVA's proposed adaptation, **semantic monotony**, instead favors one consistent operation and meaning across accessible input methods (keyboard, pointer, menus, direct manipulation and AI). This is a DVA interpretation, not Raskin's terminology. Avoid redundant paths that add confusion without meaningful accessibility or workflow benefits.
+
+- Explore a common interaction grammar across documents, panels, tables, images, components and extensions: select, inspect, move, reference, duplicate, search, undo and ask AI, where supported. Do not force unsupported operations onto every object.
+- Explore a canonical action registry with stable identifiers, applicability, input/output contracts, permissions, validation and undo semantics. Different interaction surfaces should invoke the same underlying operation where their intent is equivalent. AI must respect the same authorization and validation boundaries as other inputs.
+- Standardize action meanings, selection and navigation conventions, inspection, terminology and recovery behavior. Preserve variation in appearance, layout, content representation, specialized tools and accessible input preferences.
+- Explore orthogonality: independently composable capabilities such as inspection, search, presentation and AI assistance, without unnecessary coupling or changes to underlying content. Explicitly handle exceptions and dependencies rather than promising universal applicability.
+- Extensions should inherit familiar interaction conventions where practical; specialized interactions remain possible when justified by the task.
+- Evaluate through concrete workflows: can a user transfer learned interactions to unfamiliar objects or extensions, predict outcomes, recover from errors and complete tasks without manuals? Compare strict and semantic monotony where useful; avoid enforcing either dogmatically.
+
+This extends interface feng shui, learn-through-use, reusable inspection and contextual capability discovery. The aim is complexity in what people create rather than unnecessary complexity in operating the environment. These are provisional design directions, not implemented features. The linked article is an introductory reference; the full book and related prior art remain research leads.
 
 ## Version 0.15.0: Change Summary
 
