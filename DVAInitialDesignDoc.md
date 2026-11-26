@@ -1,9 +1,19 @@
 # DVA: Design Document
 
-**Version:** 0.14.0  
+**Version:** 0.14.1  
 **Status:** Provisional. Working design model, not an implementation specification.  
-**Previous version:** 0.13.0  
+**Previous version:** 0.14.0  
 **Motto:** Evidence over speculation.
+
+## Version 0.14.1: Change Summary
+
+Elevate three existing research references to foundational interface-design references alongside Dynamicland's computing philosophy.
+
+- [Laws of UX](https://lawsofux.com/) (Jon Yablonski): use interaction psychology to evaluate cognitive load, discoverability, familiarity, feedback and attention. Treat heuristics as contextual guidance, not universal rules.
+- The Humane Interface (Jef Raskin): reduce unnecessary cognitive effort, support consistent and learnable interactions, and avoid needless modes and interruptions.
+- A Pattern Language (Christopher Alexander and collaborators): explore interconnected, adaptable design patterns for an environment people inhabit. Translate spatial principles into panel arrangement, navigation, hierarchy, continuity and coherent customization rather than literally reproducing architectural patterns.
+
+Together these inform DVA's interface feng shui: functional navigation, aesthetic coherence and respect for attention. Dynamicland informs computing as a medium for thought; these references inform the experience of inhabiting that medium. Use them to guide design reviews and task-based evaluation, not as rigid requirements or claims of implemented behavior. Detailed source study remains future research.
 
 ## Version 0.14.0: Change Summary
 
