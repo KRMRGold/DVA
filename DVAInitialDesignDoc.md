@@ -1,9 +1,18 @@
 # DVA: Design Document
 
-**Version:** 0.14.1  
+**Version:** 0.15.0  
 **Status:** Provisional. Working design model, not an implementation specification.  
-**Previous version:** 0.14.0  
+**Previous version:** 0.14.1  
 **Motto:** Evidence over speculation.
+
+## Version 0.15.0: Change Summary
+
+Adopt [Contextual Discovery and Consideration Architecture](https://github.com/KRMRGold/Meta-Modules/blob/main/modules/contextual-discovery-and-consideration.md) as a shared provisional design reference. DVA should support learning through pursuing intentions rather than requiring manuals or memorized commands. Recognition rather than recall and the paradox of the active user are relevant research leads.
+
+- Make capabilities visible through contextual actions, working examples, inspectable components and optional example workspaces. Documentation and public presentation should demonstrate concrete workflows before abstract terminology. Where feasible, examples should be editable and reusable; Material Design 3 is a visual reference rather than a direct-manipulation interaction model.
+- AI should discover actual supported capabilities and relevant considerations even when the user does not know what to ask. For a blog publishing request, discover HTML export, surface privacy/security/accessibility considerations, preview the exact public output and flag private notes, metadata, credentials, local paths and unsafe dependencies. Keep redaction and publication under user control; automated reviews do not guarantee security.
+- Use safe defaults and deterministic validation independently of AI. Distinguish optional suggestions from significant risks and required permission gates. Avoid overwhelming the user or silently modifying content.
+- DVA owns the interaction, preview, inspection and review experience; shared discovery guidance lives in Meta-Modules, while SMH-Tree may provide scoped retrieval and routing. These are proposed responsibilities, not implemented integrations.
 
 ## Version 0.14.1: Change Summary
 
