@@ -1,9 +1,42 @@
 # DVA: Design Document
 
-**Version:** 0.13.0  
+**Version:** 0.14.0  
 **Status:** Provisional. Working design model, not an implementation specification.  
-**Previous version:** 0.12.0  
+**Previous version:** 0.13.0  
 **Motto:** Evidence over speculation.
+
+## Version 0.14.0: Change Summary
+
+This design refinement records philosophical references, progressive composition, and the importance of functional and aesthetic interface flow. These are design directions, not immediate implementation requirements.
+
+### Computing as a medium for thought
+
+- Treat [Dynamicland / CDG Research Agenda (2014)](https://dynamicland.org/2014/CDG_Research_Agenda.pdf) as a foundational philosophical reference for interactive representations, exploration and human agency, rather than a specification to reproduce. DVA explores a desktop, writing-first and AI-assisted interpretation; physical and communal computing are not implied requirements.
+- Structure emerges from thought; functionality emerges from need; tools emerge from repeated use. A note may become a structured document, interactive artifact, reusable tool or extension without requiring the user to choose an application category in advance. Every stage is a valid stopping point.
+- AI bridges intention and implementation. Preserve optional user-authored intent, constraints, assumptions and examples alongside composed artifacts so future changes can respect their purpose. Generate inspectable acceptance examples where useful, distinguish expected from observed behavior, and let users correct either.
+- Extend inspectability beyond property values: where supported, expose the source, controlling properties, rules, dependencies and available actions of a selected element. Contextual capability discovery should use registered capabilities, not require memorization or an AI connection. Reuse previously composed capabilities when relevant, with user control over adoption and modification.
+
+### Interface flow and aesthetics (working concept: interface feng shui)
+
+The workspace is an environment to inhabit, not merely a collection of features. Functional navigation and aesthetic coherence are equally important design concerns. The user's experience of the Dynamicland website illustrates a caution: intellectually compelling and visually interesting material can still be difficult to navigate. Do not confuse novelty, flexibility or visual richness with usability.
+
+- Maintain spatial continuity, clear orientation, predictable navigation, visible context and understandable routes back to previous work.
+- Use visual hierarchy, purposeful whitespace, readable typography, consistent controls and restrained motion to guide attention. Preserve accessibility, keyboard navigation, focus visibility, contrast and reduced-motion preferences.
+- Provide coherent defaults and progressive disclosure; customization should not be a prerequisite for comfortable use. Keep advanced capabilities discoverable without overwhelming the immediate task.
+- Allow personal aesthetic expression while retaining legibility and functional consistency. Evaluate the experience of sustained creative work, not just isolated feature demonstrations.
+- Assess proposed interfaces with representative tasks: finding and returning to a document, moving between related items, discovering an unfamiliar action, inspecting and modifying an artifact, and recovering from mistakes. Observe navigation friction, orientation, errors, accessibility and subjective comfort. Avoid imposing arbitrary numerical targets before baseline evidence exists.
+- Ask whether a feature helps people think and create or merely gives them another thing to operate.
+
+### Additional prior art and research leads
+
+- [Glamorous Toolkit](https://gtoolkit.com/): moldable development, problem-specific views and inspectors.
+- [Lively.next](https://lively-next.org/), [Squeak](https://squeak.org/) and [Self](https://selflanguage.org/): live, inspectable and modifiable environments.
+- [Observable](https://observablehq.com/) and [Grist](https://www.getgrist.com/): reactive computation and multiple representations of structured data.
+- [Dynamicland](https://dynamicland.org/), [Media for Thinking the Unthinkable](https://worrydream.com/MediaForThinkingTheUnthinkable/) and [Up and Down the Ladder of Abstraction](https://worrydream.com/LadderOfAbstraction/): representations as instruments of thought.
+- Jef Raskin's The Humane Interface and Archy; Christopher Alexander's A Pattern Language: cognitive friction and coherent inhabitable environments.
+- [Material Design](https://m3.material.io/), [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) and [Laws of UX](https://lawsofux.com/): practical interface design references, not mandatory visual styles.
+
+References are investigation leads; their detailed applicability and current availability require verification. The CDG agenda is a philosophical reference identified by the user, not a claim that the full PDF has been reviewed. No runtime or implementation acceptance is implied.
 
 ## Version 0.13.0: Change Summary
 
