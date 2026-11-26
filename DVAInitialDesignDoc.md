@@ -1,9 +1,61 @@
 # DVA: Design Document
 
-**Version:** 0.16.0  
-**Status:** Provisional. Working design model, not an implementation specification.  
-**Previous version:** 0.15.0  
+**Version:** 0.17.1\
+**Status:** Provisional. Working design model, not an implementation specification.\
+**Previous version:** 0.17.0\
 **Motto:** Evidence over speculation.
+
+[Design references](#39-design-references)
+
+## Version 0.17.1: Change Summary
+
+The prototype lets users drag a panel's title grip to preview and commit a new order in the workspace. Dragging its bottom-right handle changes its width and height. Undo and Redo cover both gestures. Workspace JSON saves the panel order and any custom dimensions.
+
+## Version 0.17.0: Change Summary
+
+Explore DVA as an all-in-one creative workspace. A writer can turn the material already in their workspace into a project dashboard, an interactive document, or a reusable tool. The same workspace can handle writing, research, organization, and publishing.
+
+### YAML-authored interactive documents
+
+Start with a concrete writing workflow. A story note can gain an **Open outline** button and a **Scene references** carousel that browses existing maps and character notes. The author can edit the controls in source or inspect their properties in DVA. The document and its views use the same referenced items. Later, an HTML export could expose the same carousel and link to an included outline.
+
+This example illustrates possible fields inside a Markdown file's YAML front matter.
+
+```yaml
+components:
+  - type: button
+    label: Open outline
+    action:
+      id: open-item
+      target: story-outline
+  - type: carousel
+    label: Scene references
+    items:
+      - scene-map
+      - character-notes
+```
+
+- A component definition names the type, its properties, the items it displays, and any action to invoke. DVA validates the declaration and renders it using a supported component. The button resolves its target and uses the same registered **Open item** action as other DVA controls.
+- Give authors a source view, a property inspector, and a live preview of the same component. In the story example, reordering the carousel through the inspector updates the authored item order. Browsing to the next card changes only the viewer's current position.
+- Store file-owned declarations in the Markdown file's YAML front matter. Embedded documents can use the same data model in workspace JSON. Rendering and inspection follow the project's existing rules for source ownership.
+- Explore a shared component model for DVA and browser export. The export preview should show which content is included and which actions are available to readers. A carousel can browse packaged items in the browser. An **Open outline** button can become a link when the outline is included. Report any missing targets or desktop-only actions before export.
+- For a first prototype, render one button and one carousel with manual navigation. Check that keyboard users can browse the carousel and activate the button, that source and inspector edits stay in sync, and that a missing target produces a clear message.
+
+### Prior art for an all-in-one workspace
+
+- **Glamorous Toolkit** shows how a single object can have a general inspector and views tailored to the task. Study its directory example to see how a specialized view can make the same underlying data easier to work with. In DVA, try viewing a collection of notes as source, a list, and a carousel. [The Moldable Development Environment](https://book.gtoolkit.com/the-moldable-development-environment-7d4vgu73hjq8fsi6s3wy8wqpt)
+- **Material Design 3** provides component behavior and layout examples for buttons and carousels. Use its desktop guidance to evaluate how a carousel fits a resizable panel, and use W3C's carousel pattern to check labels, focus, and previous/next controls. [Material Design 3 desktop components](https://m3.material.io/foundations/desktop/components) · [Material 3 carousel examples](https://developer.android.com/develop/ui/compose/components/carousel) · [W3C carousel pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/)
+- **Home Assistant** has YAML-defined dashboard buttons with configurable actions such as navigation. Study how it describes the action alongside the button's properties. DVA can apply the pattern to its own registered actions and workspace items. [Home Assistant dashboard actions](https://www.home-assistant.io/dashboards/actions/)
+- **Coda** puts writing, controls, tables, and formulas on the same document canvas. Study how a control in one part of a document can affect a view elsewhere. In DVA, try adding a filter to a collection of project notes without moving the notes out of the writing workspace. [Coda canvas controls](https://help.coda.io/hc/en-us/articles/39555865536013-Canvas-control-basics)
+- **Quarto** shows a route from Markdown and YAML options to a browser dashboard with cards and layout. Study its source-to-output workflow when designing how a DVA workspace can become an interactive publication. [Quarto dashboards](https://quarto.org/docs/dashboards/)
+
+## Version 0.16.2: Change Summary
+
+Add a design reference guide that connects foundational reading, working examples, and technical sources to concrete DVA design questions.
+
+## Version 0.16.1: Change Summary
+
+Use **panel** for the movable, resizable region in a window. Panels can show a single item directly or group items in tabs. Clarify that users define mark syntax and behavior, with built-in defaults as a starting point.
 
 ## Version 0.16.0: Change Summary
 
@@ -124,7 +176,7 @@ This update establishes workspace publishing as a first-class export goal: a wor
 
 - Panels are movable and resizable. Splitting creates another panel but does not permanently lock the new panel into that split.
 - The user's drag/drop location determines placement intent. The live preview shows the resulting layout before the drop is committed, including panels that will slide or resize to make room.
-- Dropping onto a pane's tab area opens the item as a tab there; dropping at an edge previews a split in that direction; dropping into available workspace space, including below existing panels, previews a new panel there.
+- Dropping onto a panel's tab area opens the item as a tab there; dropping at an edge previews a split in that direction; dropping into available workspace space, including below existing panels, previews a new panel there.
 - When space is constrained, the placement may use a tab, rearrange existing panels, or place the new panel in the next available space. The pointer location and visible preview, not an opaque placement choice, communicate the result.
 - Dropping an external file into the workspace opens it in a new panel or tab according to the preview, without unexpectedly replacing existing content.
 - Dropping a file onto the Files panel is a file-management interaction, distinct from dropping it into the writing workspace. Exact copy/move semantics for file-management drops remain open.
@@ -162,9 +214,9 @@ This update establishes workspace publishing as a first-class export goal: a wor
 
 Field meanings and validation:
 - `schemaVersion`: required integer identifying the document format. The first implementation accepts version `1`; unknown versions are rejected rather than guessed at.
-- `panels`: ordered array of panel records. Each has a positive, unique numeric `id`, a string `title`, and string `content`. An empty array is valid when the user closes the final panel.
+- `panels`: ordered array of panel records. Array order determines display order. Each panel has a positive, unique numeric `id`, a string `title`, and string `content`. The optional `size` object stores positive integer `width` and `height` values in CSS pixels. Panels without a saved size use the responsive default. An empty array is valid when the user closes the final panel.
 - `activePanelId`: ID of the currently active panel. For a non-empty panel list it must reference an existing panel. When the list is empty, the current prototype uses `0`.
-- Future workspace fields such as windows, panes, tabs, marks, file references, cursor positions, settings, history, and relationships should be added through deliberate schema evolution rather than silently inferred from this first schema.
+- Future workspace fields such as windows, panels, tabs, marks, file references, cursor positions, settings, history, and relationships should be added through deliberate schema evolution rather than silently inferred from this first schema.
 
 #### File lifecycle and recovery contract
 
@@ -251,7 +303,7 @@ This document describes intended behavior and current design decisions. A design
 
 - The workspace is JSON-first. The workspace JSON contains working content and layout, not just configuration.
 - Writing does not require creating or naming files.
-- Windows, panes, tabs, and items form the working environment.
+- Windows, panels, tabs, and items form the working environment.
 - Marks are anchored in text. Their definitions and appearance settings are global.
 - Mark delimiters remain visible in Full view. Their visual emphasis changes with cursor and selection context, not their existence.
 - Everyday editing uses Full view by default.
@@ -338,7 +390,7 @@ Standalone text files are optional. The workspace can reference files on disk wh
 
 The workspace JSON may contain:
 
-- Windows, panes, tabs, and items
+- Windows, panels, tabs, and items
 - Embedded content
 - File references
 - Cursor and scroll positions
@@ -355,27 +407,26 @@ The workspace is intended to be inspectable, portable, understandable, and versi
 ```text
 Workspace (JSON)
 └── Windows
-    └── Panes
-        └── Tabs
-            └── Open items
-                ├── Embedded: content in workspace JSON
-                ├── File: content on disk
-                └── View: search, history, settings, etc.
+    └── Panels
+        └── Open items (shown directly or organized in tabs)
+            ├── Embedded: content in workspace JSON
+            ├── File: content on disk
+            └── View: search, history, settings, etc.
 ```
 
 | Layer | Meaning |
 |---|---|
 | Workspace | The working environment and its content |
 | Window | An operating-system window |
-| Pane | A split region containing tabs |
+| Panel | A movable, resizable region that shows an item directly or groups items in tabs |
 | Tab | A view of an item, with its own navigation state |
-| Open item | Content or a tool view displayed in a tab |
+| Open item | Content or a tool view displayed in a panel |
 
-A item can be open in multiple tabs. Tabs can move between panes and windows. A tab can be torn off into a new window and moved back, browser-style.
+An item can be open in multiple tabs. Tabs can move between panels and windows. A tab can be torn off into a new window and moved back, browser-style.
 
 An embedded item can be promoted to a file or a separate workspace.
 
-Writing does not require understanding the internal data model. The user works with panes, tabs, and content.
+Writing does not require understanding the internal data model. The user works with panels, tabs, and content.
 
 ### Architectural principle
 
@@ -385,11 +436,11 @@ Consequences:
 
 - Creating content does not require a naming dialog.
 - Autosave preserves new work without requiring a separate file.
-- Panes and references can operate on content regardless of file identity.
+- Panels and references can operate on content regardless of file identity.
 - Promotion is an explicit decision to give content an independent representation.
 - A workspace can travel as a self-contained unit, subject to any separately referenced files.
 
-DVA is not a file editor that happens to have panes. It is a workspace where work can exist before it has a file identity and can remain that way indefinitely.
+Work can live in the workspace indefinitely without a separate file.
 
 ### Technology Stack
 
@@ -437,7 +488,7 @@ Content belongs in one of two conceptual places.
 
 **In the text:** Position-anchored marks, comments, iterations, and other inline structures. They render at their anchors and travel with the text.
 
-**In a pane:** Views projected from content and its metadata, such as an index, outline, tree, iteration view, search results, save history, or comparison.
+**In a panel:** Views projected from content and its metadata, such as an index, outline, tree, iteration view, search results, save history, or comparison.
 
 Views may derive information from content, but they should not silently become competing sources of truth.
 
@@ -445,7 +496,7 @@ The same underlying text and metadata may have different presentations for diffe
 
 ## 8. Open Items
 
-A item is the content or view a tab points to.
+An item is the content or tool view a panel can display directly or in a tab.
 
 ### Embedded
 
@@ -472,13 +523,13 @@ A tool view is not ordinary writing content. It displays or operates on other co
 
 Examples include search, settings, file exploration, save history, comparison, and version-control interfaces.
 
-## 9. Windows, Panes, and Tabs
+## 9. Windows, Panels, and Tabs
 
-**Windows** are operating-system windows. They hold panes and can be torn off or restored. Their positions can be remembered.
+**Windows** are operating-system windows. They hold panels and can be torn off or restored. Their positions can be remembered.
 
-**Panes** are split regions within a window. They hold tabs and can be split horizontally or vertically.
+**Panels** are movable, resizable regions within a window. A panel can show one item directly or group multiple items in tabs. A horizontal or vertical split creates another panel.
 
-**Tabs** point to items. They maintain their own cursor, scroll position, and view settings. Tabs can be moved between panes, opened in separate windows, or closed independently.
+**Tabs** point to items. They maintain their own cursor, scroll position, and view settings. Tabs can be moved between panels, opened in separate windows, or closed independently.
 
 ### Intended behavior
 
@@ -487,15 +538,15 @@ Examples include search, settings, file exploration, save history, comparison, a
 - Open the same item in multiple tabs.
 - Restore the previous working arrangement when reopening a workspace.
 - Keep source and destination files accessible side by side while the user works between them.
-- Opening an item from the file finder should not unexpectedly replace the current item or destroy the working arrangement. Prefer opening alongside the current item, or let the user choose the destination pane.
-- Remember the arrangement so the user can return to the same set of files and panes later.
+- Opening an item from the file finder should not unexpectedly replace the current item or destroy the working arrangement. Prefer opening alongside the current item, or let the user choose the destination panel.
+- Remember the arrangement so the user can return to the same set of files and panels later.
 - Panels can be moved and resized independently after creation. A split creates a new panel but does not permanently bind that panel to the split position.
-- For drag-and-drop placement, the pointer's target determines the intended result and a live preview shows the actual resulting layout before release. A tab-area drop creates a tab in that pane; an edge drop previews a split in that direction; a drop into available space, including beneath existing panels, previews a new panel there.
+- For drag-and-drop placement, the pointer's target determines the intended result and a live preview shows the actual resulting layout before release. A tab-area drop creates a tab in that panel. An edge drop previews a split in that direction. A drop into available space, including beneath existing panels, previews a new panel there.
 - If space is constrained, DVA may make room by resizing or moving other panels, use a tab where the pointer indicates, or place the panel in the next available space. The preview must make the consequence visible before committing.
 
 The goal is to reduce tab juggling and repeated split-panel setup. The user should not need to reconstruct the workspace every time they move information between files.
 
-Session restoration preserves panes, tabs, active tabs, cursor and scroll positions, and window positions where supported.
+Session restoration preserves panels, tabs, active tabs, cursor and scroll positions, and window positions where supported.
 
 Horizontal splits are allowed, but the workspace layout must not require horizontal scrolling. Workspace-level overflow is vertical only. Panels and their content adapt to the available width; content-specific image zooming or panning is distinct from workspace scrolling.
 
@@ -634,11 +685,9 @@ This is a long-term architectural goal, not a requirement to ship universal app 
 
 ## 13. Marks
 
-A mark is a position in text, not a container.
+A mark is anchored to a position in text and moves with that text. The anchor rule stays consistent so users can predict what happens when they move a passage.
 
-The mark is attached to its position. When text moves, the mark moves with it.
-
-This may produce awkward results in some cases. Consistency is preferable to unpredictable behavior. The rule remains consistent and understandable, so the user can decide how to work with it.
+Users can define their own mark syntax and choose what each mark does.
 
 ### Default mark types
 
@@ -651,15 +700,15 @@ This may produce awkward results in some cases. Consistency is preferable to unp
 | `*` | Flexible, user-defined mark |
 | `()` | Aside or softer comment |
 | `[]` | Reference |
-| `|` | Attribute or key-value structure |
+| `\|` | Attribute or key-value structure |
 
-These are sane defaults, not a mandatory universal vocabulary. Users can remap mark syntax and define additional mark types.
+Users can keep, remap, or extend these defaults.
 
 ### Citation and reference presentation
 
 Citations and references can use the existing mark, annotation, and metadata model rather than requiring a separate copy of the text for each reading style. The citation's semantic association with its relevant text is stored in workspace metadata; the visible citation and its placement are presentation choices.
 
-For example, a research passage may read naturally in Reading View while a citation such as `(Smith, 2026)` appears in a small contextual annotation beside the passage or in an associated reference pane. The reader can inspect the source without the citation interrupting the sentence. In Writing or Review View, the same citation can appear inline. A conventional research-paper export can render the inline citation and corresponding bibliography entry using the selected style.
+For example, a research passage may read naturally in Reading View while a citation such as `(Smith, 2026)` appears in a small contextual annotation beside the passage or in an associated reference panel. The reader can inspect the source without the citation interrupting the sentence. In Writing or Review View, the same citation can appear inline. A conventional research-paper export can render the inline citation and corresponding bibliography entry using the selected style.
 
 - Keep the citation associated with the relevant text when the text is edited or rearranged, using the workspace's anchor and relationship rules.
 - Let the user inspect the source without forcing the reading presentation to use the same layout as a conventional paper.
@@ -683,7 +732,7 @@ The exact grouping, filtering, hierarchy, and whether the index is workspace-wid
 
 Mark definitions and mark appearance settings are global.
 
-A user does not have to define a different meaning for `#`, `[]`, or another mark in each pane. The same mark grammar applies throughout the application.
+The user's mark definitions apply throughout DVA, so a configured mark has the same meaning across panels.
 
 Mark meaning and theme selection are separate concerns. A theme can affect the surrounding visual environment, but changing a theme does not redefine mark behavior.
 
@@ -715,21 +764,13 @@ The exact settings interface and complete list of supported treatments remain im
 
 ### Commands
 
-Commands use `/`.
+A mark's definition can bind it to an action. The default command syntax starts with `/`. Users can bind actions to other mark syntax.
 
-They execute an action and may disappear or leave a trace in history, depending on the command's behavior.
-
-Example:
-
-`/[setting: add more]`
-
-This is a proposed syntax example, not a finalized grammar. The exact rules for combining command and reference syntax remain open.
+An action can leave a mark inline, remove it, or leave a trace in history, depending on the configured behavior. For example, `/[setting: add more]` illustrates one possible way to express an append action with a reference. The rules for recognizing and triggering configured commands remain open.
 
 ### References
 
-References use `[]` by default.
-
-They persist inline and can act as links to items. They may support collapsed presentations while retaining the underlying syntax in Full view.
+The default reference syntax uses `[]`. Users can define other ways to express a reference. References persist inline and can act as links to items. They may support collapsed presentations while retaining the underlying syntax in Full view.
 
 Clicking a reference can navigate to its item.
 
@@ -747,15 +788,13 @@ These are alternative presentations of the same underlying content. Different ta
 
 Full is the everyday default. Clean and Markers remain optional views, not requirements for editing.
 
-Text can also use either a scrollable, webpage-style presentation or a fixed, pane-sized presentation. Ordinary writing views avoid horizontal scrolling.
+Text can also use either a scrollable, webpage-style presentation or a fixed, panel-sized presentation. Ordinary writing views avoid horizontal scrolling.
 
 ## 14. Aggregation
 
-Aggregation is appending content to an item, not a separate kind of view.
+Aggregation appends content to an item. For example, a user can define `[setting: add world stuff]` to append the associated content to the end of the `setting` item and leave a reference at the mark's original position.
 
-For example, typing `[setting: add world stuff]` can append the associated content to the bottom of the `setting` item.
-
-The mark remains at its original position as a pointer to the destination.
+With the same inputs and options, the Append action has the same effect whether it comes from a mark, a menu, or a drag.
 
 - The source text shows the reference.
 - Following the reference navigates to the destination.
@@ -764,7 +803,7 @@ The mark remains at its original position as a pointer to the destination.
 
 The item is the aggregation. The mark is the reference.
 
-The exact syntax, duplicate handling, and undo behavior require prototype testing.
+Command triggering, duplicate handling, and undo behavior require prototype testing.
 
 ## 15. Iteration
 
@@ -886,7 +925,7 @@ Every step is designed as a natural extension of writing. Structure is a byprodu
 
 ## 22. Day One
 
-The app opens to one empty pane and a faint contextual control layer.
+The app opens to one empty panel and a faint contextual control layer.
 
 No required template, category picker, or onboarding process interrupts the first act of writing.
 
@@ -896,7 +935,7 @@ The tool makes possible actions visible without making them mandatory.
 
 A contextual action list appears at the bottom of the workspace.
 
-It reflects what is possible given the focused pane, cursor, selection, and open panes.
+It reflects what is possible given the focused panel, cursor, selection, and open panels.
 
 It changes as the user works and helps teach the application's grammar.
 
@@ -915,7 +954,7 @@ These are plain-named views that may overlap in purpose.
 
 **Search:** Find files, marks, positions, content, tags, save states, and actions. Search is designed to support combinations of content and tags, such as finding content matching `card` and `game`, or combining tag filters like `tag:card` and `tag:game`. Exact query syntax remains open.
 
-**Files:** An in-app folder explorer. Multiple folder panes may remain open. Drag-and-drop supports movement between panes. The file browser itself is an ordinary panel, not a special navigation layer that hides the real file structure. Users should be able to open files and supported metadata/configuration files as panels, and edit them in place when appropriate.
+**Files:** An in-app folder explorer. Multiple folder panels may remain open. Drag-and-drop supports movement between panels. The file browser itself is an ordinary panel, not a special navigation layer that hides the real file structure. Users should be able to open files and supported metadata/configuration files as panels, and edit them in place when appropriate.
 
 **File menu and contextual actions:** The File menu is the central place to discover workspace and file operations. For now, it contains the complete set of these operations without requiring permanent buttons for each one. Use clear, consistent names across the File menu, Files panel, and right-click menus. Right-click menus expose relevant contextual actions but do not replace the File menu. Working labels are **Open Workspace…**, **Save Workspace**, **Save Workspace As…**, **Open File…**, and **Show Workspace Location**. These labels distinguish loading/saving the whole workspace JSON from opening an ordinary file. Preserve all existing keyboard shortcuts, including Ctrl/Cmd+S, Ctrl/Cmd+F, and Ctrl/Cmd+N. Do not add shortcuts for these new operations or other features unless the user explicitly requests them.
 
@@ -927,7 +966,7 @@ These are plain-named views that may overlap in purpose.
 
 The operation should be undoable and make it clear whether the text is being moved or copied. Avoid forcing a destination-location dialog: appending is the simple default, and the user can reorganize the destination later. The exact move/copy gesture remains to be finalized.
 
-**Mark Index Pane:** A dedicated pane gathers marks from the current workspace into a navigable index. It helps users find and browse marked content without searching every document manually. Selecting an index entry takes the user to its mark in the source text. The index is a view derived from marks, not a separate source of truth. Mark types such as `#` declarations can contribute entries; grouping, filters, and exact presentation remain open design details.
+**Mark Index Panel:** A dedicated panel gathers marks from the current workspace into a navigable index. It helps users find and browse marked content without searching every document manually. Selecting an index entry takes the user to its mark in the source text. The index derives its entries from marks. Mark types such as `#` declarations can contribute entries. Grouping, filters, and presentation remain open design details.
 
 **Save History:** Browse earlier workspace snapshots, inspect their contents and metadata, compare versions, and restore a previous state deliberately.
 
@@ -959,7 +998,7 @@ Theme availability and theme selection are separate. System-wide settings define
 
 ### Global mark settings
 
-Mark definitions and mark appearance are global. They are not redefined independently by each pane.
+Global settings govern mark definitions and appearance across all panels.
 
 Themes do not silently overwrite explicit mark-style preferences. The precise precedence rules between theme defaults and explicit style settings should be defined before implementation.
 
@@ -976,7 +1015,7 @@ The user should be able to:
 - Inspect previous workspace states.
 - Revisit an earlier version.
 - Compare current and past work.
-- Open an earlier state in another pane.
+- Open an earlier state in another panel.
 - Continue developing from an earlier state.
 - Restore a previous state intentionally.
 - Attach their own context to saved states.
@@ -1020,7 +1059,7 @@ The user sees a plain-named Save History view containing browsable snapshots.
 
 Selecting a snapshot allows inspection or preview without replacing the current workspace.
 
-The user can open a past state in another pane and compare it with current work. This should feel like opening another view, not checking out an old commit.
+The user can open a past state in another panel and compare it with current work. This should feel like opening another view, not checking out an old commit.
 
 The interface clearly distinguishes the current state from the state being inspected.
 
@@ -1102,7 +1141,7 @@ It does not replace the original item or change its identity.
 
 **Structured:** Content can be exported with companion data for comments, iterations, or metadata.
 
-**Citation-aware views and export:** Citation metadata can remain attached to its relevant text while different views present it differently. Reading View may move the visible citation into a contextual annotation or reference pane to preserve prose flow; Writing or Review View may display it inline; conventional-paper export may render inline citations and a bibliography in the selected citation style. The chosen presentation must not change the underlying citation relationship. Citation-style support, bibliography generation, and the exact view controls remain design details to validate before implementation.
+**Citation-aware views and export:** Citation metadata can remain attached to its relevant text while different views present it differently. Reading View may move the visible citation into a contextual annotation or reference panel to preserve prose flow; Writing or Review View may display it inline; conventional-paper export may render inline citations and a bibliography in the selected citation style. The chosen presentation must not change the underlying citation relationship. Citation-style support, bibliography generation, and the exact view controls remain design details to validate before implementation.
 
 **HTML publication:** Render the workspace itself as a browser-readable publication. The export should preserve the author's panel arrangement, navigation, and supported links/relationships so the workspace can be the work, rather than forcing the author to rebuild it as a conventional document. Recipients should be able to open and explore the published result in an ordinary browser without installing DVA. The default publication is read-only but interactive for navigation; editing published copies and synchronizing edits back to DVA are separate capabilities, not implied by HTML export.
 
@@ -1150,7 +1189,7 @@ For example, two stories may share a universe; a lore entry explains technology 
 
 ## 31. Workspace JSON Schema
 
-The following is a conceptual shape, not a finalized or validated schema.
+The following conceptual schema illustrates a panel that uses tabs.
 
 ```json
 {
@@ -1164,14 +1203,14 @@ The following is a conceptual shape, not a finalized or validated schema.
   "windows": [
     {
       "id": "win-1",
-      "panes": ["pane-1"],
-      "activePane": "pane-1",
+      "panels": ["panel-1"],
+      "activePanel": "panel-1",
       "layout": "single"
     }
   ],
-  "panes": [
+  "panels": [
     {
-      "id": "pane-1",
+      "id": "panel-1",
       "tabs": ["tab-1"],
       "activeTab": "tab-1"
     }
@@ -1234,7 +1273,7 @@ The goal is one visible layer of abstraction: users can work through a purpose-b
 - `tabs[].themeOverride` can select a tab-specific theme.
 - Names may remain blank.
 - System-wide settings live separately.
-- Mark definitions and mark appearance are global settings, not pane-specific mark dialects.
+- Global settings store mark definitions and appearance preferences.
 - Workspace history does not need to be embedded as a `history[]` array. It may live in a separate storage structure.
 - Snapshot annotations must be associated reliably with the snapshots they describe, regardless of the storage mechanism.
 
@@ -1254,13 +1293,13 @@ These formats serve different needs without competing to become the single repre
 
 The intended design supports:
 
-- Multiple splits, tabs, panes, and windows.
+- Multiple splits, tabs, panels, and windows.
 - A multi-purpose workspace that can host supported app views and connected tools alongside writing and documents.
 - Distinct integration modes for native DVA panels, embedded web content, integrated tools, and external native applications.
 - App surfaces that participate in tabbing, splitting, resizing, and restoration where technically supported.
 - Persistent side-by-side access to source and destination files.
 - Dragging selected text onto a file to append it to the destination.
-- A dedicated, navigable Mark Index Pane.
+- A dedicated, navigable Mark Index Panel.
 - The same item open in multiple tabs.
 - Browser-style tab tear-off and reintegration.
 - Content that exists without file identity.
@@ -1287,7 +1326,7 @@ These are design goals, not a claim that each has been implemented or verified.
 
 ### Marks and writing
 
-- Exact mark syntax and triggering rules.
+- How DVA recognizes user-defined mark syntax and when action marks trigger.
 - Exact behavior of combined command and reference syntax.
 - Undo behavior for commands, references, and appended content.
 - How mark styles are configured and previewed.
@@ -1300,7 +1339,7 @@ These are design goals, not a claim that each has been implemented or verified.
 - How a placement preview should resolve edge cases when the workspace is crowded or has no obvious free area.
 - Default behavior when opening an item from the file finder while another item is active.
 - Copy/move semantics and undo for dropping files into the Files panel; separately, the established drag-to-append text operation still needs clear move-versus-copy behavior and undo.
-- Mark Index Pane grouping, filters, sorting, and navigation behavior.
+- Mark Index Panel grouping, filters, sorting, and navigation behavior.
 - How cross-workspace content is opened and referenced.
 - Folder explorer operations.
 - Search result presentation and filtering.
@@ -1333,17 +1372,17 @@ These questions remain open intentionally. Decisions follow discussion, prototyp
 | Term | Meaning |
 |---|---|
 | Workspace | The container for working state and content, represented by JSON |
-| Window | Operating-system window containing panes |
-| Pane | Split region containing tabs; can be moved and resized within the workspace |
+| Window | Operating-system window containing panels |
+| Panel | Movable, resizable region that shows an item directly or groups items in tabs |
 | Tab | View of an item with its own navigation state |
-| Open item | Content or view opened in a tab |
+| Open item | Content or tool view displayed in a panel |
 | Embedded content | Writing stored directly inside workspace JSON by default |
 | File | Content stored separately on disk, such as a text file, image, or PDF |
 | Workspace File | JSON file that stores the DVA workspace and its working state |
 | Files | In-app folder explorer panel |
 | File menu | Central menu for discovering workspace and file operations |
 | View | A presentation or tool operating on content |
-| Mark | A position-anchored structure in text |
+| Mark | A text-anchored structure whose definition supplies its syntax and behavior |
 | Command | A mark that triggers an action |
 | Reference | A persistent mark pointing to an item |
 | Aggregation | Appending content to an item |
@@ -1369,7 +1408,7 @@ These questions remain open intentionally. Decisions follow discussion, prototyp
 
 Intended behavior:
 
-1. Type `@` followed by a question or prompt.
+1. Type the configured query mark followed by a question or prompt.
 2. A panel opens beside the text.
 3. The response appears in its own panel.
 4. The user may copy, reference, develop, ignore, or delete the response.
@@ -1430,5 +1469,20 @@ Testing is required development work, not an optional final review. AI must run 
 Maintain one current DVA test record describing the most recent test run: [DVA Test Record](DVA-Test-Record.md). Update it after actual test execution. It must state explicitly when no tests have yet been run. The record is evidence of a run, not a substitute for executable tests.
 
 These gates apply to the initial vertical slice and later changes. They are intended to prevent the project from accumulating features on top of an unverified foundation.
+
+## 39. Design References
+
+Use these references to identify a pattern worth trying and a workflow that can show whether it fits DVA.
+
+For the main design direction, start with the story-note example and the sources that inform the workspace, component behavior, authoring, and browser output. [YAML-authored interactive documents](#yaml-authored-interactive-documents) · [Prior art for an all-in-one workspace](#prior-art-for-an-all-in-one-workspace)
+
+- **Learnable interaction and interface flow.** Observe whether a writer can discover an action through the Control Layer, use it in a new context, and predict the result. Consult the foundational sources on attention, learnability, and arranging an environment people work in. [The Humane Interface](https://www.informit.com/store/humane-interface-new-directions-for-designing-interactive-9780201379372) · [A Pattern Language](https://christopher-alexander-ces-archive.org/book/a-pattern-language/) · [Foundational interface references](#version-0141-change-summary) · [Learn-through-use and contextual assistance](#version-0150-change-summary)
+- **Malleable tools and representations.** Follow a real note as it becomes structured material, an inspectable view, or a reusable tool. Use Dynamicland and the live-system references to explore what the user can inspect, change, and reuse at each stage. [Dynamicland research agenda archive](https://dynamicland.org/archive/2014/Research_agenda?category=Posters_2014) · [Live environments and interactive representations](#additional-prior-art-and-research-leads)
+- **Panel layout and session continuity.** Compare splitting, moving, and returning to working surfaces. In a DVA prototype, reopen a workspace with the same item visible in two panels and check each view's position and focus. [Zed features](https://zed.dev/features) · [tmux usage](https://github.com/tmux/tmux/wiki/Getting-Started) · [DVA layout](#9-windows-panels-and-tabs)
+- **Marks, citations, and annotations.** Study how an editor maps positions through edits and how an external annotation can describe its target by position or by quoted text and surrounding context. Test moving a marked passage, selecting repeated text, and reopening a source that has changed. Keep mark syntax configurable in those tests. [ProseMirror transforms](https://github.com/ProseMirror/prosemirror-transform) · [W3C Web Annotation selectors](https://www.w3.org/TR/annotation-model/#selectors) · [DVA marks](#13-marks)
+- **Actions and extensions.** Use context-sensitive commands and extension registration as precedents. Try the same append through a configured mark, menu, and drag with the same input and destination. Check the result, undo, and when each route is offered. [VS Code command contexts](https://code.visualstudio.com/api/references/when-clause-contexts) · [Obsidian plugin example](https://docs.obsidian.md/Plugins/Getting%20started/Build%20a%20plugin) · [DVA aggregation](#14-aggregation)
+- **Properties, inspection, and publishing.** Use one document to test raw source, an inspector, and rendered output. Check which file owns each property, whether a targeted edit preserves unrelated fields, and which properties appear in export. [Property, schema, and publishing tools](#prior-art-for-further-investigation) · [DVA export](#28-export)
+- **Local ownership and recovery.** Test saving and reopening work, inspecting the underlying file, and recovering after an interrupted write. Use local-first principles to guide choices about ownership and portability, and the Tauri references to evaluate filesystem access. [Local-first software](https://www.inkandswitch.com/essay/local-first/) · [DVA persistence and platform references](#file-lifecycle-and-recovery-contract) · [DVA save history](#26-save-history-and-version-control)
+- **Related prototypes.** Consult the existing notes on File Finder, Sketch to Text, the reusable inspector, Git Visual, and the other related projects when a DVA design could reuse a tested interaction or capability. [Composition and related experiments](#human-readable-qualities-and-on-demand-composition) · [Stack and Git Visual](#technology-stack) · [Extension proving grounds](#extension-ecosystem-and-public-api-direction)
 
 End of document.

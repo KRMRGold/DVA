@@ -1,22 +1,100 @@
 # DVA Test Record
 
-**Document version:** 0.6.1  
-**Current status:** New candidate adds native versioned workspace JSON, guarded localStorage migration, recovery UI, regression tests, and a Rust schema-validation test suite. Frontend runs #24 and #25 passed for the relevant source commits; native Rust CI was added in run #26 and is pending at the time this record is written. Desktop runtime and real close/reopen persistence remain unverified. Do not mark application acceptance complete until the native job and desktop runtime gate are checked.  
+**Document version:** 0.6.10\
+**Current status:** Local Windows frontend and native filesystem checks passed. Browser checks verified panel movement, resizing, undo, redo, and reopening. Windows desktop acceptance remains pending.\
 **Accepted application baseline:** The earlier frontend-only run belongs to the old `zpitchfolo/DVAexe` repository and does not establish acceptance of the current `zpitchfolo/DVA` source.
 
-## Current candidate
+## Local Windows verification
+
+Run on 2026-11-26 from 15:53 to 16:02 EST in a disposable copy of local `main` at `3d6aee250445f3109bb7daf0f357ab84bc42df8c`. The copy contained the existing `Cargo.lock` 0.2.0 version sync. The recovery candidate added changes to `app/src-tauri/src/lib.rs`. The byte hash of the applied source matched the tested copy. Environment was Windows build 22631, Node.js 24.15.0, npm 11.12.1, Rust 1.95.0, and Tauri CLI 2.12.4.
+
+| Check | Evidence |
+|---|---|
+| Dependencies | **PASS.** `npm ci --ignore-scripts --no-audit` with a disposable cache installed 118 packages from the lockfile. The initial tests using copied dependencies failed because the copy omitted dependency build outputs and the installed Vitest was older than the lockfile. |
+| Frontend | **PASS.** `npm test` passed all 11 tests with Vitest 4.1.12. `npm run build` passed TypeScript and Vite 8.3.5. |
+| Dependency audit | **PASS.** `npm audit` reported zero vulnerabilities. |
+| Native baseline | **PASS.** `cargo test --offline --locked --manifest-path src-tauri/Cargo.toml` passed five tests. |
+| Native recovery candidate | **PASS.** The same Cargo command passed eight tests. Added coverage checks that missing primary JSON preserves backup and temporary files, a normal save replaces the primary and keeps the previous version, and a failed backup leaves the primary readable. |
+| Desktop build | **PASS.** `cargo build --offline --locked --manifest-path src-tauri/Cargo.toml` built the application with a disposable Tauri data directory and a loopback dev server for the desktop check. |
+| Desktop interaction | **BLOCKED.** The isolated WebView2 initialized a profile, and the renderer logs reported GPU process failures. The loopback WebView debugger connection was refused on the original attempt, the environment-variable retry, and the software-rendering retry. Desktop typing, migration, shortcuts, and graceful close/reopen could not be exercised. |
+| Hosted native CI | **Unverified.** The existing run link did not return the job result during this session. The Windows Cargo results above were run locally. |
+
+## Control Layer layout verification
+
+Run on 2026-11-26 against local main at 3d6aee2 with the transparent, viewport-pinned Control Layer in app/src/App.css. The disposable copy used Node.js 24.15.0 and npm 11.12.1.
+
+- **PASS.** npm test passed all 11 frontend tests. npm run build passed TypeScript and Vite.
+- **PASS.** A 1280 × 720 in-app browser fixture used the app stylesheet with 14 panels and a long workspace path. The workspace scrolled independently, the controls stayed at the viewport bottom, and the last panel remained above them. The footer and shortcut key backgrounds were transparent.
+- The first standalone headless Chrome attempt exited at GPU initialization. The browser fixture supplied the layout evidence. Native desktop persistence still has the separate blocker recorded above.
+
+
+Overlay follow-up on 2026-11-26. The same 1280 × 720 browser fixture passed with one panel and with 14 panels. Panels passed behind the transparent shortcuts, hit testing reached the panel behind a shortcut, and the last panel scrolled clear. Both the header and the shortcuts stayed pinned. npm test passed all 11 tests and npm run build passed.
+
+## Interactive note preview verification
+
+Run on 2026-11-26 from a disposable copy of local main at 3d6aee2 with the YAML button changes. The user reported that saving works in their app.
+
+- **PASS.** npm test passed 14 tests. Added coverage for a saved YAML button after remount, target IDs that are missing or ambiguous, and an unsupported action that leaves the source editable. The search test also checks that it focuses the matching panel.
+- **PASS.** npm run build passed TypeScript and Vite. npm audit reported zero vulnerabilities with yaml 2.9.1 in the lockfile.
+- **PASS.** In the browser preview at 127.0.0.1:1431, two notes were created through the normal editor. The Open outline button focused the outline panel before and after reloading the page.
+- The new feature was exercised in the browser preview. The Windows desktop runtime check remains separate.
+
+
+Paste follow-up on 2026-11-26. npm test passed all 16 tests and npm run build passed. Added regression coverage for copied, indented fences in previously saved notes and for separator text inside a YAML block label. In the running Windows DVA app, Ctrl+R restored the two existing sample notes with their correct titles. Expanding Story draft Preview showed Open outline, and clicking it made Story outline active. This check exercised a WebView reload and the native preview interaction.
+
+## Inline YAML editor verification
+
+Run on 2026-11-26 from a disposable copy of local main at 3d6aee2 with the inline editor and the locked CodeMirror dependencies.
+
+- **PASS.** npm test passed all 18 frontend tests. Added coverage for recognizing the closing fence, preserving prose before and after buttons, editing and folding the source, and rendering multiple blocks in order.
+- **PASS.** npm run build passed TypeScript and Vite. Vite warned that the main JavaScript chunk is 602.37 kB before compression. npm audit reported zero vulnerabilities.
+- **PASS.** In DVA's browser preview on port 1437, real keyboard input completed a closing fence and added prose below it. The arrow exposed the YAML, editing the label updated the button, and the folded button focused its target. Reload restored the edited button and the surrounding text.
+- Windows desktop verification of this revision remains pending.
+
+
+## Inline carousel verification
+
+Run on 2026-11-26 from a disposable copy of local main at 3d6aee2 with the carousel changes.
+
+- **PASS.** npm test passed all 21 frontend tests. New tests cover card order and excerpts, keyboard focus during navigation, opening a linked panel, a missing target, selection through edits and folding, and a helpful error for an empty list.
+- **PASS.** npm run build passed TypeScript and Vite. The existing chunk-size warning reported a 605.54 kB main chunk before compression.
+- **PASS.** In the browser preview on port 1441, one YAML block contained a button and a carousel. Enter on Next advanced the carousel with focus intact. Opening a card selected its panel. Editing its source updated the selected card's excerpt, and the edited content was available after reloading.
+- The browser preview exercises the inline carousel. Windows desktop verification of this revision remains pending.
+
+
+## Workspace undo and redo verification
+
+Run on 2026-11-26 from a disposable copy of local main at 3d6aee2 with the workspace history changes.
+
+- **PASS.** npm test passed all 25 tests. New coverage checks grouped typing and caret restoration, undo and redo across panel and text changes, clearing redo after a fresh edit, preserving search input behavior, and editing expanded YAML.
+- **PASS.** npm run build passed TypeScript and Vite. Vite reported its existing main-chunk size warning.
+- **PASS.** In the browser preview on port 1445, Ctrl+Z undid a typing burst and Ctrl+Y restored it. Undo restored a closed panel and its writing. Ctrl+Shift+Z closed it again. After another undo, the restored panel survived reload. The same shortcuts also undid and redid a YAML button label edit while its source stayed expanded.
+- The browser preview exercises the workspace history. Windows desktop verification of this revision remains pending.
+
+
+## Panel layout verification
+
+Run on 2026-11-26 in a disposable copy of local main at 3d6aee2 with the panel layout changes.
+
+- **PASS.** `npm test` passed all 26 tests, including keyboard movement, keyboard resizing, undo and redo, editing a resized panel, and restoring the layout after reopening.
+- **PASS.** `npm run build` passed TypeScript and Vite. Vite reported its existing main-chunk size warning.
+- **PASS.** `cargo test --offline --locked --manifest-path src-tauri/Cargo.toml` passed all 9 tests. The new test saves and reloads the panel order and dimensions through the native JSON file.
+- **PASS.** In the browser preview on port 1449, a corner drag increased the right panel from 421 × 328 to 521 × 397 CSS pixels while its left edge stayed in place. Dragging the title grip moved it to the first position. Undo and Redo changed the size and order in separate steps. The final layout survived a reload.
+- Windows desktop UI verification of this revision remains pending.
+
+## Native persistence candidate
 
 | New persistence slice | Current source status |
 |---|---|
 | Native JSON | Rust commands load and save `workspace.json` under Tauri's app-data directory |
-| JSON shape | `schemaVersion: 1`, `panels[]` with `id/title/content`, and `activePanelId`; see design doc v0.8.0 |
-| Migration | Only when JSON is missing; validates localStorage data, writes and verifies JSON, retains original localStorage |
-| Recovery | Malformed/invalid saved data pauses initialization and autosave instead of silently replacing it |
-| Write strategy | Temporary file + flush/readback validation + prior-file `.bak` copy before replacement |
-| Native schema tests | Added Rust unit tests; see the new native CI job |
-| Desktop acceptance | **NOT RUN** in this environment | 
+| JSON shape | `schemaVersion: 1`, an ordered `panels[]` with `id/title/content` and optional `size`, and `activePanelId` |
+| Migration | When primary JSON and its recovery artifacts are absent, the app validates any legacy localStorage data, writes and verifies JSON, and keeps the legacy copy |
+| Recovery | Invalid saved data or a recovery file alongside a missing primary pauses initialization and autosave |
+| Write strategy | Flush and verify a temporary file, preserve the previous file as a `.bak`, then replace the primary in one rename |
+| Native tests | Local Windows tests cover schema validation and filesystem recovery cases |
+| Desktop acceptance | **BLOCKED** at WebView2 startup in the isolated test environment |
 
-## Current candidate
+## Earlier frontend candidate
 
 | Field | Result |
 |---|---|
@@ -64,13 +142,10 @@
 
 ## Required next verification
 
-1. Run `npm ci` in `app/`.
-2. Run `npm test`.
-3. Run `npm run build`.
-4. Launch the desktop app with `npm run tauri dev`.
-5. Enter text, create multiple panels, close and reopen the app, and confirm all remaining panel content returns.
-6. Exercise Ctrl+N, Ctrl+F search, Ctrl+S, and the Save button in the desktop runtime. The shortcut is Ctrl+F in the current implementation.
-7. Inspect the Git diff and update this record with exact outcomes only after the commands and checks actually run.
+1. Launch the current candidate with `npm run tauri dev` in an interactive Windows session using disposable test data.
+2. Verify legacy data migration, panel contents and active state through close/reopen, Ctrl+N, Ctrl+F, Ctrl+S, and the Save button.
+3. Verify that malformed JSON, backup-only startup, and save failures surface a clear recovery or failure message in the desktop UI.
+4. Confirm the native CI job result and record exact desktop outcomes before accepting the candidate.
 
 ## Known gaps and stop conditions
 

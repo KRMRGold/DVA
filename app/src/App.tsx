@@ -1,9 +1,12 @@
 import { getVersion } from "@tauri-apps/api/app";
 import { invoke, isTauri } from "@tauri-apps/api/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type CSSProperties } from "react";
+import { findNoteBlocks, panelExcerpt, readInteractiveNote, type PanelTarget } from "./NotePreview";
+import { NoteEditor } from "./NoteEditor";
+import { usePanelLayout } from "./usePanelLayout";
 
-type Panel = { id: number; title: string; content: string };
-type WorkspaceSnapshot = { panels: Panel[]; activePanelId: number };
+import { initialWorkspaceHistory, workspaceHistoryReducer, type NoteEdit, type Panel, type WorkspaceSnapshot } from "./WorkspaceHistory";
+
 type WorkspaceDocument = WorkspaceSnapshot & { schemaVersion: number };
 type NativeWorkspaceLoad = { workspace: WorkspaceDocument | null; path: string };
 
@@ -14,6 +17,10 @@ const starterWorkspace = (): WorkspaceSnapshot => ({
   panels: [{ ...starterPanel }],
   activePanelId: starterPanel.id,
 });
+
+function titleFromText(text: string) {
+  return text.trim().split(/\r?\n/, 1)[0].slice(0, 32) || "Untitled";
+}
 
 function parseWorkspace(raw: string): WorkspaceSnapshot {
   const saved: unknown = JSON.parse(raw);
@@ -35,6 +42,11 @@ function parseWorkspace(raw: string): WorkspaceSnapshot {
   if (panels.some((panel) => !Number.isSafeInteger(panel.id) || panel.id <= 0)) {
     throw new Error("The saved workspace contains an invalid panel ID.");
   }
+  if (panels.some(({ size }) => size != null && [size.width, size.height].some((value) =>
+    !Number.isSafeInteger(value) || value <= 0 || value > 0xffffffff
+  ))) {
+    throw new Error("The saved workspace contains an invalid panel size.");
+  }
   if (new Set(panels.map((panel) => panel.id)).size !== panels.length) {
     throw new Error("The saved workspace contains duplicate panel IDs.");
   }
@@ -42,12 +54,18 @@ function parseWorkspace(raw: string): WorkspaceSnapshot {
     throw new Error("The saved workspace points to an active panel that does not exist.");
   }
 
-  return { panels, activePanelId: saved.activePanelId };
+  const restoredPanels = panels.map((panel) => {
+    if (panel.title !== "---") return panel;
+    const note = readInteractiveNote(panel.content);
+    return note ? { ...panel, title: titleFromText(note.body) } : panel;
+  });
+  return { panels: restoredPanels, activePanelId: saved.activePanelId };
 }
 
 export default function App() {
-  const [panels, setPanels] = useState<Panel[]>([]);
-  const [activePanelId, setActivePanelId] = useState(0);
+  const [history, dispatch] = useReducer(workspaceHistoryReducer, { panels: [], activePanelId: 0 }, initialWorkspaceHistory);
+  const { panels, activePanelId } = history.current;
+  const layout = usePanelLayout(panels, dispatch);
   const [saveStatus, setSaveStatus] = useState("Loading workspace…");
   const [saveError, setSaveError] = useState("");
   const [appVersion, setAppVersion] = useState(`${DEVELOPMENT_VERSION} · preview`);
@@ -58,6 +76,20 @@ export default function App() {
   const [recoveryData, setRecoveryData] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const panelHandles = useRef(new Map<number, HTMLButtonElement>());
+  const targets = useMemo(() => {
+    const targets = new Map<string, PanelTarget | null>();
+    for (const panel of panels) {
+      const blocks = findNoteBlocks(panel.content);
+      const id = blocks.find((block) => block.itemId)?.itemId;
+      if (id) targets.set(id, targets.has(id) ? null : {
+        id: panel.id,
+        title: panel.title,
+        excerpt: panelExcerpt(panel.content, blocks, panel.title),
+      });
+    }
+    return targets;
+  }, [panels]);
   const activePanel = panels.find((panel) => panel.id === activePanelId);
   const recoveryRequired = recoveryMessage.length > 0;
 
@@ -87,8 +119,7 @@ export default function App() {
 
           if (native.workspace) {
             const restored = parseWorkspace(JSON.stringify(native.workspace));
-            setPanels(restored.panels);
-            setActivePanelId(restored.activePanelId);
+            dispatch({ type: "load", snapshot: restored });
             setSaveStatus("Loaded workspace JSON");
             setReady(true);
             return;
@@ -109,8 +140,7 @@ export default function App() {
             const verifiedPath = await invoke<string>("save_workspace", { workspace: document });
             if (cancelled) return;
             setWorkspacePath(verifiedPath);
-            setPanels(migrated.panels);
-            setActivePanelId(migrated.activePanelId);
+            dispatch({ type: "load", snapshot: migrated });
             setSaveStatus("Migrated and verified workspace JSON");
             setReady(true);
             return;
@@ -122,8 +152,7 @@ export default function App() {
           });
           if (cancelled) return;
           setWorkspacePath(verifiedPath);
-          setPanels(initial.panels);
-          setActivePanelId(initial.activePanelId);
+          dispatch({ type: "load", snapshot: initial });
           setSaveStatus("Created workspace JSON");
           setReady(true);
           return;
@@ -133,8 +162,7 @@ export default function App() {
           try {
             const restored = parseWorkspace(raw);
             if (cancelled) return;
-            setPanels(restored.panels);
-            setActivePanelId(restored.activePanelId);
+            dispatch({ type: "load", snapshot: restored });
             setSaveStatus("Loaded browser workspace");
           } catch (error) {
             setRecoveryMessage("DVA found saved browser data but could not safely load it: " + String(error));
@@ -144,8 +172,7 @@ export default function App() {
           }
         } else {
           const initial = starterWorkspace();
-          setPanels(initial.panels);
-          setActivePanelId(initial.activePanelId);
+          dispatch({ type: "load", snapshot: initial });
           setSaveStatus("New browser workspace");
         }
         if (!cancelled) setReady(true);
@@ -202,31 +229,28 @@ export default function App() {
   }, [ready, recoveryRequired, panels, activePanelId]);
 
   function createPanel() {
-    if (recoveryRequired) return;
-    const id = Math.max(0, ...panels.map((panel) => panel.id)) + 1;
-    setPanels((current) => [...current, { id, title: "Untitled", content: "" }]);
-    setActivePanelId(id);
+    if (ready && !recoveryRequired) dispatch({ type: "add" });
   }
 
-  function updateContent(id: number, content: string) {
-    setPanels((current) => current.map((panel) => panel.id === id ? {
-      ...panel,
-      content,
-      title: content.trim().split("\n")[0]?.slice(0, 32) || "Untitled",
-    } : panel));
+  function updateContent(id: number, content: string, edit: NoteEdit) {
+    const body = readInteractiveNote(content)?.body ?? content;
+    dispatch({ type: "edit", panel: { id, content, title: titleFromText(body) }, edit });
   }
 
-  function closePanel(id: number) {
-    const next = panels.filter((panel) => panel.id !== id);
-    setPanels(next);
-    if (activePanelId === id) setActivePanelId(next[next.length - 1]?.id ?? 0);
-  }
+  useLayoutEffect(() => {
+    const restore = history.restore;
+    if (restore && !restore.selection) panelHandles.current.get(restore.panelId)?.focus();
+  }, [history.restore]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (!(event.ctrlKey || event.metaKey) || event.altKey || recoveryRequired || !ready) return;
       const key = event.key.toLowerCase();
-      if (key === "n") {
+      if (key === "z" || key === "y") {
+        if (event.isComposing || event.target instanceof HTMLInputElement) return;
+        event.preventDefault();
+        dispatch({ type: key === "y" || event.shiftKey ? "redo" : "undo" });
+      } else if (key === "n") {
         event.preventDefault();
         createPanel();
       } else if (key === "f") {
@@ -244,8 +268,13 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [panels, activePanelId, ready, recoveryRequired]);
 
+  function openPanel(id: number) {
+    dispatch({ type: "activate", id });
+    panelHandles.current.get(id)?.focus();
+  }
+
   function openPanelFromSearch(id: number) {
-    setActivePanelId(id);
+    openPanel(id);
     setSearchOpen(false);
     setSearchQuery("");
   }
@@ -264,6 +293,26 @@ export default function App() {
         <div className="topbar-actions">
           <span className={saveStatus === "Save failed" || recoveryRequired ? "status-dot status-error" : "status-dot"} aria-hidden="true" />
           <span className="status-label" role="status">{saveStatus}</span>
+          <div className="history-actions" role="group" aria-label="Undo and redo">
+            <button
+              className="secondary-button"
+              onClick={() => dispatch({ type: "undo" })}
+              disabled={!ready || recoveryRequired || history.past.length === 0}
+              title="Undo (Ctrl or Cmd + Z)"
+              aria-keyshortcuts="Control+Z Meta+Z"
+            >
+              Undo
+            </button>
+            <button
+              className="secondary-button"
+              onClick={() => dispatch({ type: "redo" })}
+              disabled={!ready || recoveryRequired || history.future.length === 0}
+              title="Redo (Ctrl + Y or Ctrl/Cmd + Shift + Z)"
+              aria-keyshortcuts="Control+Y Control+Shift+Z Meta+Shift+Z"
+            >
+              Redo
+            </button>
+          </div>
           <button className="secondary-button" onClick={() => void saveWorkspace()} disabled={!ready || recoveryRequired}>Save</button>
           <button className="primary-button" onClick={createPanel} disabled={!ready || recoveryRequired}>+ New panel</button>
         </div>
@@ -294,15 +343,72 @@ export default function App() {
           {panels.length === 0 ? (
             <div className="empty-state"><p className="eyebrow">OPEN SPACE</p><h1>Start anywhere.</h1><p>Create a panel and let structure emerge as you work.</p><button className="primary-button" onClick={createPanel}>Create a panel</button></div>
           ) : (
-            <div className="panel-grid">{panels.map((panel) => (
-              <article className={panel.id === activePanelId ? "panel panel-active" : "panel"} key={panel.id} onClick={() => setActivePanelId(panel.id)} aria-label={panel.title}>
-                <header className="panel-header">
-                  <button className="panel-handle" aria-label={"Focus " + panel.title + " panel"} onClick={(event) => { event.stopPropagation(); setActivePanelId(panel.id); }}><span className="grip" aria-hidden="true">⠿</span><span>{panel.title}</span></button>
-                  <button className="icon-button" aria-label={"Close " + panel.title + " panel"} onClick={(event) => { event.stopPropagation(); closePanel(panel.id); }}>×</button>
-                </header>
-                <textarea aria-label={panel.title + " content"} placeholder="Write something. You can organize it later." value={panel.content} onFocus={() => setActivePanelId(panel.id)} onChange={(event) => updateContent(panel.id, event.currentTarget.value)} spellCheck />
-              </article>
-            ))}</div>
+            <div
+              className="panel-grid"
+              ref={layout.setGrid}
+              style={layout.columnWidth ? { "--panel-column-width": `${layout.columnWidth}px` } as CSSProperties : undefined}
+              onPointerMove={layout.update}
+              onPointerUp={(event) => layout.finish(event, true)}
+              onPointerCancel={(event) => layout.finish(event)}
+              onLostPointerCapture={(event) => layout.finish(event)}
+            >
+              {panels.map((panel) => {
+                const previewing = layout.preview?.id === panel.id;
+                const size = previewing && layout.preview?.type === "resize" ? layout.preview.size : panel.size;
+                const style = {
+                  ...(size ? { "--panel-width": `${size.width}px`, "--panel-height": `${size.height}px` } : {}),
+                  order: layout.draftOrder?.get(panel.id),
+                } as CSSProperties;
+                const active = panel.id === activePanelId;
+                const moving = previewing && layout.draftOrder;
+                return (
+                  <article
+                    className={`panel${active ? " panel-active" : ""}${moving ? " panel-moving" : ""}`}
+                    key={panel.id}
+                    data-panel-id={panel.id}
+                    style={style}
+                    onClick={() => dispatch({ type: "activate", id: panel.id })}
+                    aria-label={panel.title}
+                  >
+                    <header className="panel-header">
+                      <button
+                        className="panel-handle"
+                        aria-label={"Focus " + panel.title + " panel"}
+                        title="Drag to move this panel, or use the arrow keys"
+                        onPointerDown={(event) => layout.start(event, panel, "move")}
+                        onKeyDown={(event) => layout.keyDown(event, panel, "move")}
+                        ref={(element) => {
+                          if (element) panelHandles.current.set(panel.id, element);
+                          else panelHandles.current.delete(panel.id);
+                        }}
+                        onClick={(event) => { event.stopPropagation(); openPanel(panel.id); }}
+                      >
+                        <span className="grip" aria-hidden="true">⠿</span><span>{panel.title}</span>
+                      </button>
+                      <button className="icon-button" aria-label={"Close " + panel.title + " panel"} onClick={(event) => { event.stopPropagation(); dispatch({ type: "close", id: panel.id }); }}>×</button>
+                    </header>
+                    <NoteEditor
+                      label={panel.title + " content"}
+                      value={panel.content}
+                      targets={targets}
+                      restoreSelection={history.restore?.panelId === panel.id ? history.restore.selection : null}
+                      onFocus={() => dispatch({ type: "activate", id: panel.id })}
+                      onChange={(content, edit) => updateContent(panel.id, content, edit)}
+                      onHistory={(type) => dispatch({ type })}
+                      onOpenPanel={openPanel}
+                    />
+                    <button
+                      className="panel-resize"
+                      type="button"
+                      aria-label={"Resize " + panel.title + " panel"}
+                      title="Drag to resize this panel, or use the arrow keys"
+                      onPointerDown={(event) => layout.start(event, panel, "resize")}
+                      onKeyDown={(event) => layout.keyDown(event, panel, "resize")}
+                    />
+                  </article>
+                );
+              })}
+            </div>
           )}
         </section>
       )}

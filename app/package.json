@@ -12,11 +12,16 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@codemirror/commands": "6.11.2",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.44.2",
     "@tauri-apps/api": "^2",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -26,7 +31,6 @@
     "jsdom": "^26.1.0",
     "typescript": "~6.0.3",
     "vite": "^8.0.16",
-    "vitest": "^4.1.12",
-    "@tauri-apps/cli": "^2"
+    "vitest": "^4.1.12"
   }
 }
